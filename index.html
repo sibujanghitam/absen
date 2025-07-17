@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Form Absensi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-light">
+  <div class="container py-5">
+    <h2 class="mb-4">Form Absensi Siswa</h2>
+    <form id="absenForm">
+      <div class="mb-3">
+        <label for="nisn" class="form-label">NISN</label>
+        <input type="text" id="nisn" name="nisn" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Nama</label>
+        <input type="text" id="nama" class="form-control" readonly>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Kelas</label>
+        <input type="text" id="kelas" class="form-control" readonly>
+      </div>
+      <div class="mb-3">
+        <label for="keterangan" class="form-label">Keterangan</label>
+        <select id="keterangan" name="keterangan" class="form-select" required>
+          <option value="">-- Pilih --</option>
+          <option value="Hadir">Hadir</option>
+          <option value="Izin">Izin</option>
+          <option value="Sakit">Sakit</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Absen Sekarang</button>
+    </form>
+    <div id="status" class="mt-3"></div>
+  </div>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/PASTE_URL_WEB_APP_KAMU/exec';
+
+    const form = document.getElementById('absenForm');
+    const status = document.getElementById('status');
+    const nisnInput = document.getElementById('nisn');
+    const namaInput = document.getElementById('nama');
+    const kelasInput = document.getElementById('kelas');
+
+    // Otomatis isi nama dan kelas saat NISN diketik
+    nisnInput.addEventListener('blur', () => {
+      const nisn = nisnInput.value.trim();
+      if (!nisn) return;
+
+      fetch(`${scriptURL}?nisn=${nisn}`)
+        .then(res => res.json())
+        .then(data => {
+          namaInput.value = data.nama || 'Tidak ditemukan';
+          kelasInput.value = data.kelas || 'Tidak ditemukan';
+        });
+    });
+
+    // Kirim absen
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.text())
+      .then(result => {
+        if (result === "OK") {
+          status.innerHTML = `<div class="alert alert-success">✅ Absen berhasil disimpan!</div>`;
+          form.reset();
+          namaInput.value = '';
+          kelasInput.value = '';
+        } else if (result === "Sudah absen") {
+          status.innerHTML = `<div class="alert alert-warning">⚠️ Kamu sudah absen hari ini!</div>`;
+        } else {
+          status.innerHTML = `<div class="alert alert-danger">❌ Gagal: ${result}</div>`;
+        }
+      })
+      .catch(err => {
+        status.innerHTML = `<div class="alert alert-danger">❌ Error: ${err}</div>`;
+      });
+    });
+  </script>
+</body>
+</html>
